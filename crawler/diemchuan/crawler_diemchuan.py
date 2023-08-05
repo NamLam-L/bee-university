@@ -8,15 +8,16 @@ from helper.error_helper import show_error_info
 from helper.logger_helper import LoggerSimple
 from helper.multithread_helper import multithread_helper
 from helper.reader_helper import load_jsonl_from_gz, store_jsons_perline_in_file
-
+import pandas as pd
 logger = LoggerSimple(name=__name__).logger
 
-
+df = pd.DataFrame(columns=['university_code', 'university_name', 'major_code', 'major_name', 'subject_group', 'point', 'year', 'note', 'url'])
+row = []
 def extract_data_diemchuan(url_diemchuan, university_meta, year=None):
     if year is None:
         diemchuan_datas = []
 
-        for year in [2019, 2018, 2017, 2016, 2015, 2014]:
+        for year in [ 2018, 2019, 2020, 2021, 2022]:
             try:
                 url_with_year = f'{url_diemchuan}?y={year}'
                 logger.info(f'prepare extract {url_with_year}')
@@ -34,16 +35,19 @@ def extract_data_diemchuan(url_diemchuan, university_meta, year=None):
                         point = e_tds[4].get_text()
                         note = e_tds[5].get_text()
                         for subject_group in subject_groups:
-                            diemchuan_obj = {
-                                'major_code': major_code,
-                                'major_name': major_name,
-                                'subject_group': subject_group,
-                                'point': point,
-                                'note': note,
-                                'year': year
-                            }
-                            logger.info(diemchuan_obj)
-                            diemchuan_datas.append(diemchuan_obj)
+                            
+                            # diemchuan_obj = {
+                            #     'major_code': major_code,
+                            #     'major_name': major_name,
+                            #     'subject_group': subject_group,
+                            #     'point': point,
+                            #     'note': note,
+                            #     'year': year
+                            # }
+                            row.append([university_meta['university_code'], university_meta['university_name'], major_code, major_name, subject_group, point, year, note, university_meta['url']])
+
+                            # logger.info(diemchuan_obj)
+                            # diemchuan_datas.append(diemchuan_obj)
                 else:
                     logger.info(f'{response.status_code} - {url_with_year}')
 
@@ -66,6 +70,7 @@ def method_univerisy_data(university_obj):
 
 if __name__ == '__main__':
     file_university_path = ConfigUniversityProject().file_university_path
+    # file_university_path = file_university_path.split(".")[0] + ".csv"
     universities = load_jsonl_from_gz(file_university_path)
 
     # logger.info(universities)
@@ -73,7 +78,9 @@ if __name__ == '__main__':
                                                      timeout_concurrent_by_second=360, debug=False,
                                                      max_workers=20)
     file_university_diemchuan_path = ConfigUniversityProject().file_university_diemchuan_path
-    store_jsons_perline_in_file(jsons_obj=universities_diemchuan_data, file_output_path=file_university_diemchuan_path)
+    #store_jsons_perline_in_file(jsons_obj=universities_diemchuan_data, file_output_path=file_university_diemchuan_path)
+    df = pd.DataFrame(row, columns=['university_code', 'university_name', 'major_code', 'major_name', 'subject_group', 'point', 'year', 'note', 'url'])
+    df.to_csv(file_university_path.split(".")[0] + ".csv", index = False, encoding='utf_8_sig')
     logger.info(f'stored file_university_diemchuan_path: {file_university_diemchuan_path}')
 
 # if __name__ == '__main__':
